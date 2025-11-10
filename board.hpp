@@ -6,7 +6,7 @@
 #include <vector>
 #include <format>
 
-typedef struct
+typedef struct field
 {
     std::string position;
     Piece piece;
@@ -18,6 +18,11 @@ typedef struct
             return std::format("E {}", position);
 
         return std::format("{}{} {}", color_to_string(color), piece_to_string(piece), position);
+    }
+
+    const bool equal(const struct field &other) const
+    {
+        return position == other.position && piece == other.piece && color == other.color;
     }
 } field;
 
@@ -42,8 +47,18 @@ public:
     const bool black_is_checked() const { return _black_is_checked; }
     const bool has_white_won() const { return white_won; }
     const bool has_black_won() const { return black_won; }
+    const std::string serialize() const;
+    void load_board(std::string serialized_board);
 
     void show() const;
+
+    const bool state_equal(Board other) const
+    {
+        for (const auto &position : all_positions)
+            if (!board.at(position).equal(other.get_field(position)))
+                return false;
+        return true;
+    }
 
 private:
     const bool move_is_legal(std::string from, std::string to) const;

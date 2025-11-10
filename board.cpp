@@ -1,5 +1,6 @@
 #include "board.hpp"
 #include <iostream>
+#include <sstream>
 
 const bool move_is_orthogonal(short row_difference, char abs_column_difference);
 const bool move_is_diagonal(short row_difference, char abs_column_difference);
@@ -200,13 +201,73 @@ const bool Board::move(std::string from, std::string to)
     return true;
 }
 
+const std::string Board::serialize() const
+{
+    std::string serialized_board = "";
+    for (const auto &position : all_positions)
+    {
+        serialized_board += board.at(position).to_string() + "\n";
+    }
+    return serialized_board;
+}
+
+void Board::load_board(std::string serialized_board)
+{
+    std::stringstream board_stream = std::stringstream(serialized_board);
+
+    std::string line;
+
+    while (getline(board_stream, line, '\n'))
+    {
+        if (line[0] == 'E')
+        {
+            board[line.substr(2)].color = Color::NoColor;
+            board[line.substr(2)].piece = Piece::NoPiece;
+            continue;
+        }
+
+        std::string position;
+        if (line[0] == 'W')
+        {
+            position = line.substr(3);
+            board[position].color = Color::White;
+        }
+        else if (line[0] == 'B')
+        {
+            position = line.substr(3);
+            board[position].color = Color::Black;
+        }
+        switch (line[1])
+        {
+        case 'K':
+            board[position].piece = Piece::King;
+            break;
+        case 'Q':
+            board[position].piece = Piece::Queen;
+            break;
+        case 'B':
+            board[position].piece = Piece::Bishop;
+            break;
+        case 'R':
+            board[position].piece = Piece::Rook;
+            break;
+        case 'N':
+            board[position].piece = Piece::Knight;
+            break;
+        case 'P':
+            board[position].piece = Piece::Pawn;
+            break;
+
+        default:
+            break;
+        }
+    }
+}
+
 void Board::show() const
 {
     // TODO: make it look any better
-    for (const auto &position : all_positions)
-    {
-        std::cout << board.at(position).to_string() << "\n";
-    }
+    std::cout << serialize();
     std::flush(std::cout);
 }
 
