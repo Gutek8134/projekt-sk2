@@ -212,17 +212,17 @@ void Board::show() const
 
 const bool Board::move_is_legal(std::string from, std::string to) const
 {
-    // Can't beat one's own piece
-    Color color = board.at(from).color;
-    if (color == board.at(to).color)
-        return false;
-
     // Positions must exist in the board
     if (!all_positions.contains(from) || !all_positions.contains(to))
         return false;
 
     // Can't stay in place
     if (from == to)
+        return false;
+
+    // Can't beat one's own piece
+    Color color = board.at(from).color;
+    if (color == board.at(to).color)
         return false;
 
     Piece piece = board.at(from).piece;
