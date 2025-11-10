@@ -393,12 +393,12 @@ const bool Board::check_pawn_move(std::string from, std::string to, Color player
 
     if (player_color == Color::White)
     {
-        return abs(to_column - from_column) == 1                                   // Move in row, able to capture
-               || (to_row - from_row == 1 && board.at(to).piece == Piece::NoPiece) // Move in column, unable to capture
+        return (abs(to_column - from_column) == 1 && to_row == from_row)                                       // Move in row, able to capture
+               || (to_row - from_row == 1 && to_column == from_column && board.at(to).piece == Piece::NoPiece) // Move in column, unable to capture
             ;
     }
-    return abs(to_column - from_column) == -1                                  // Move in row, able to capture
-           || (to_row - from_row == 1 && board.at(to).piece == Piece::NoPiece) // Move in column, unable to capture
+    return (abs(to_column - from_column) == -1 && to_row == from_row)                                      // Move in row, able to capture
+           || (to_row - from_row == 1 && to_column == from_column && board.at(to).piece == Piece::NoPiece) // Move in column, unable to capture
         ;
 }
 
