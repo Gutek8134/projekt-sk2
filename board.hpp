@@ -43,6 +43,7 @@ public:
     const std::unordered_set<std::string> &get_all_positions() const;
     static const std::string get_symmetrical_position(std::string position);
     const bool move(std::string from, std::string to);
+    const bool promote(std::string position, Piece to);
     const bool white_is_checked() const { return _white_is_checked; }
     const bool black_is_checked() const { return _black_is_checked; }
     const bool has_white_won() const { return white_won; }

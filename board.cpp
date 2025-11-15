@@ -6,6 +6,8 @@ const bool move_is_orthogonal(short row_difference, char abs_column_difference);
 const bool move_is_diagonal(short row_difference, char abs_column_difference);
 short get_row(std::string position);
 char get_column(std::string position);
+bool position_on_end(std::string position, Color color);
+bool position_on_pawn_initial_row(short row, char col, Color pawn_color);
 
 const std::size_t cell_count = 91UL;
 
@@ -321,6 +323,7 @@ const bool Board::check_king_move(std::string from, std::string to, Color player
     char abs_column_difference = abs(to_column - from_column);
 
     // Can't intentionally move into check
+    //! possible infinite recursion, though it passed a simple test
     if (player_color == Color::White && position_under_attack(to, Color::Black))
         return false;
 
@@ -385,21 +388,43 @@ const bool Board::check_knight_move(std::string from, std::string to) const
 
 const bool Board::check_pawn_move(std::string from, std::string to, Color player_color) const
 {
-    // TODO: initial two step move
-    // TODO: promotions
     // optional TODO: en passant
     short from_row = get_row(from), to_row = get_row(to);
     char from_column = get_column(from), to_column = get_column(to);
 
     if (player_color == Color::White)
     {
-        return (abs(to_column - from_column) == 1 && to_row == from_row)                                       // Move in row, able to capture
-               || (to_row - from_row == 1 && to_column == from_column && board.at(to).piece == Piece::NoPiece) // Move in column, unable to capture
+        return (abs(to_column - from_column) == 1 && to_row == from_row) || // Move in row, able to capture
+               (to_row - from_row == 1 && to_column == from_column &&
+                board.at(to).piece == Piece::NoPiece) || // Move in column, unable to capture
+               (position_on_pawn_initial_row(from_row, from_column, player_color) &&
+                to_column == from_column && to_column - from_column == 2 &&
+                board.at(to).piece == Piece::NoPiece) // Two-step move from the initial row
             ;
     }
-    return (abs(to_column - from_column) == -1 && to_row == from_row)                                      // Move in row, able to capture
-           || (to_row - from_row == 1 && to_column == from_column && board.at(to).piece == Piece::NoPiece) // Move in column, unable to capture
+
+    return (abs(to_column - from_column) == 1 && to_row == from_row) || // Move in row, able to capture
+           (to_row - from_row == -1 && to_column == from_column &&
+            board.at(to).piece == Piece::NoPiece) || // Move in column, unable to capture
+           (position_on_pawn_initial_row(from_row, from_column, player_color) &&
+            to_column == from_column && to_column - from_column == -2 &&
+            board.at(to).piece == Piece::NoPiece) // Two-step move from the initial row
         ;
+}
+
+const bool Board::promote(std::string position, Piece to_piece)
+{
+    field pawn_field = board.at(position);
+
+    if (pawn_field.piece != Piece::Pawn)
+        return false;
+
+    if (!position_on_end(position, pawn_field.color))
+        return false;
+
+    board.at(position).piece = to_piece;
+
+    return true;
 }
 
 const bool Board::position_under_attack(std::string checked_position, Color attacker) const
@@ -503,4 +528,19 @@ short get_row(std::string position)
 char get_column(std::string position)
 {
     return position[0];
+}
+
+bool position_on_end(std::string position, Color color)
+{
+    short row = get_row(position);
+    std::string col = std::to_string(get_column(position));
+
+    return (row == 1 && color == Color::Black) ||
+           (row == line_length.at(col) && color == Color::White);
+}
+
+bool position_on_pawn_initial_row(short row, char col, Color pawn_color)
+{
+    return (pawn_color == Color::White && row == 5 - abs('f' - col)) ||
+           (pawn_color == Color::Black && row == 7);
 }
