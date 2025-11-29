@@ -1,6 +1,7 @@
 #include "board.hpp"
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 const bool move_is_orthogonal(short row_difference, char abs_column_difference);
 const bool move_is_diagonal(short row_difference, char abs_column_difference);
@@ -11,7 +12,7 @@ bool position_on_pawn_initial_row(short row, char col, Color pawn_color);
 
 const std::size_t cell_count = 91UL;
 
-Board::Board()
+Board::Board(int _game_id, int _black_player_id, int _white_player_id) : black_player_id(_black_player_id), white_player_id(_white_player_id), game_id(_game_id)
 {
     this->all_positions = {};
     this->white_pieces = {};
@@ -130,6 +131,11 @@ Board::Board()
 
 const bool Board::move(std::string from, std::string to)
 {
+    // Awaiting second player
+    // If both ids are -1, continues assuming testing purposes
+    if ((black_player_id == -1) ^ (white_player_id == -1))
+        return false;
+
     // The game has finished
     if (white_won || black_won)
         return false;
@@ -518,6 +524,59 @@ const bool move_is_diagonal(short row_difference, char abs_column_difference)
 
     return abs_column_difference == 2 * (-row_difference) || // left-right
            2 * abs_column_difference == (-row_difference);   // down diagonally
+}
+
+const bool Board::player_joined(int player_id, Color player_color)
+{
+    if (player_color == Color::NoColor)
+        throw std::invalid_argument("Invalid color in player joined: No Color");
+
+    if (player_color == Color::Black)
+    {
+        if (black_player_id != -1)
+            return false;
+        black_player_id = player_id;
+    }
+    else
+    {
+        if (white_player_id != -1)
+            return false;
+        white_player_id = player_id;
+    }
+    return true;
+}
+
+void Board::player_left(Color player_color)
+{
+    if (player_color == Color::NoColor)
+        throw std::invalid_argument("Invalid color in player joined: No Color");
+
+    if (player_color == Color::Black)
+        black_player_id = -1;
+    else
+        white_player_id = -1;
+
+    if (!has_game_ended())
+    {
+        if (player_color == Color::Black)
+            white_won = true;
+        else
+            black_won = true;
+    }
+}
+
+const int Board::get_player_id(Color player_color) const
+{
+    if (player_color == Color::NoColor)
+        throw std::invalid_argument("Invalid color in player joined: No Color");
+
+    if (player_color == Color::Black)
+        return black_player_id;
+
+    if (player_color == Color::White)
+        return white_player_id;
+
+    throw std::invalid_argument("Invalid color in player joined: Not a Color");
 }
 
 short get_row(std::string position)

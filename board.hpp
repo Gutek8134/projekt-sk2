@@ -36,9 +36,10 @@ protected:
     std::string white_king_position, black_king_position;
     bool _white_is_checked, _black_is_checked;
     bool black_won, white_won;
+    int black_player_id, white_player_id, game_id;
 
 public:
-    Board();
+    Board(int game_id = -1, int black_player_id = -1, int white_player_id = -1);
     const field &get_field(std::string at) const;
     const std::unordered_set<std::string> &get_all_positions() const;
     static const std::string get_symmetrical_position(std::string position);
@@ -48,6 +49,10 @@ public:
     const bool black_is_checked() const { return _black_is_checked; }
     const bool has_white_won() const { return white_won; }
     const bool has_black_won() const { return black_won; }
+    const bool has_game_ended() const { return white_won || black_won; }
+    const bool has_white_player() const { return white_player_id != -1; }
+    const bool has_black_player() const { return black_player_id != -1; }
+    const bool has_both_players() const { return (white_player_id != -1) && (black_player_id != -1); }
     const std::string serialize() const;
     void load_board(std::string serialized_board);
 
@@ -60,6 +65,37 @@ public:
                 return false;
         return true;
     }
+
+    const Color player_color(int player_id) const
+    {
+        if (player_id == black_player_id)
+            return Color::Black;
+        if (player_id == white_player_id)
+            return Color::White;
+        return Color::NoColor;
+    }
+
+    const bool player_joined(int player_id)
+    {
+        if (white_player_id == -1)
+            return player_joined(player_id, Color::White);
+        if (black_player_id == -1)
+            return player_joined(player_id, Color::Black);
+        return false;
+    }
+    const bool player_joined(int player_id, Color player_color);
+    void player_left(Color player_color);
+    void player_left(int player_id)
+    {
+        Color player_color = Color::NoColor;
+        if (player_id == white_player_id)
+            player_color = Color::White;
+        else if (player_id == black_player_id)
+            player_color = Color::Black;
+        player_left(player_color);
+    }
+
+    const int get_player_id(Color player_color) const;
 
 private:
     const bool move_is_legal(std::string from, std::string to) const;
