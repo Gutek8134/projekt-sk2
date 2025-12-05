@@ -68,7 +68,7 @@ bool enable_keepalive(int sock)
     return true;
 }
 
-void handle_action(const int &player_id, const std::string &action)
+bool handle_action(const int &player_id, const std::string &action)
 {
     auto arguments = split(action);
 
@@ -85,7 +85,10 @@ void handle_action(const int &player_id, const std::string &action)
     else if (arguments.at(0) == "leave")
     {
         player_control::remove_player(player_id);
+        return false;
     }
+
+    return true;
 }
 
 const bool send_messages(const int &player_id)
@@ -294,7 +297,8 @@ const bool handle_events(std::vector<pollfd> &poll_vector)
             }
 
             if (message.size() > 0)
-                handle_action(player_id, message);
+                if (!handle_action(player_id, message))
+                    elements_to_remove.push_back(i);
         }
 
         // Client ready to receive
