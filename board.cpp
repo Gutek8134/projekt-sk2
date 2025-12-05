@@ -549,7 +549,7 @@ const bool Board::player_joined(int player_id, Color player_color)
 void Board::player_left(Color player_color)
 {
     if (player_color == Color::NoColor)
-        throw std::invalid_argument("Invalid color in player joined: No Color");
+        throw std::invalid_argument("Invalid color in player left: No Color");
 
     if (player_color == Color::Black)
         black_player_id = -1;

@@ -2,8 +2,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-const bool on = true;
-const bool off = false;
+const int on = 1;
+const int off = 0;
 
 bool set_nonblock(int socket)
 {

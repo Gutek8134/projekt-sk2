@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 #include <format>
+#include <iostream>
 
 typedef struct field
 {
@@ -88,6 +89,7 @@ public:
     void player_left(int player_id)
     {
         Color player_color = Color::NoColor;
+        // std::cout << "player " << player_id << " white " << white_player_id << " black " << black_player_id << std::endl;
         if (player_id == white_player_id)
             player_color = Color::White;
         else if (player_id == black_player_id)

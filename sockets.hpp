@@ -1,6 +1,6 @@
 #pragma once
 
-extern const bool on;
-extern const bool off;
+extern const int on;
+extern const int off;
 
 bool set_nonblock(int socket);

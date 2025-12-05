@@ -1,6 +1,7 @@
 #include "player_control.hpp"
 #include <arpa/inet.h>
 #include <climits>
+#include <iostream>
 
 std::unordered_set<int> free_gids = {};
 
@@ -30,7 +31,7 @@ namespace player_control
             {
                 auto it = free_gids.begin();
                 game_id = *it;
-                free_gids.erase(game_id);
+                free_gids.erase(it);
             }
             else
             {
@@ -55,13 +56,13 @@ namespace player_control
             }
         }
 
-        games.insert({player_id, game_id});
+        games[player_id] = game_id;
         if (!boards.contains(game_id))
         {
-            Board board = Board(game_id,
-                                ((preferred_color == Color::Black) ? player_id : -1),
-                                ((preferred_color == Color::White || preferred_color == Color::NoColor) ? player_id : -1));
-            boards.insert({game_id, std::shared_ptr<Board>(&board)});
+            Board *board = new Board(game_id,
+                                     ((preferred_color == Color::Black) ? player_id : -1),
+                                     ((preferred_color == Color::White || preferred_color == Color::NoColor) ? player_id : -1));
+            boards.insert({game_id, std::shared_ptr<Board>(board)});
         }
         else
         {
@@ -77,11 +78,20 @@ namespace player_control
             else
                 board->player_joined(player_id, preferred_color);
         }
+
+        messages[player_id] = std::queue<std::string>();
+        messages.at(player_id).push(std::format("Connected to game {}", game_id));
+        std::cout << "Player " << player_id << " joined" << std::endl;
     }
 
     void remove_player(const int &player_id)
     {
+        if (!messages.contains(player_id))
+            return;
+
+        std::cout << "Player left id " << player_id << "\nBoard white id " << get_board(player_id)->get_player_id(Color::White) << " black id " << get_board(player_id)->get_player_id(Color::Black) << std::endl;
         get_board(player_id)->player_left(player_id);
+        messages.erase(player_id);
 
         shutdown(player_id, SHUT_RDWR);
         close(player_id);
