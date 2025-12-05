@@ -9,6 +9,7 @@ short get_row(std::string position);
 char get_column(std::string position);
 bool position_on_end(std::string position, Color color);
 bool position_on_pawn_initial_row(short row, char col, Color pawn_color);
+short get_relative_row_difference(short from_row, short to_row, char from_col, char to_col);
 
 const std::size_t cell_count = 91UL;
 
@@ -325,7 +326,7 @@ const bool Board::check_king_move(std::string from, std::string to, Color player
     short from_row = get_row(from), to_row = get_row(to);
     char from_column = get_column(from), to_column = get_column(to);
 
-    short row_difference = to_row - from_row;
+    short row_difference = get_relative_row_difference(from_row, to_row, from_column, to_column);
     char abs_column_difference = abs(to_column - from_column);
 
     // Can't intentionally move into check
@@ -347,7 +348,7 @@ const bool Board::check_queen_move(std::string from, std::string to) const
     short from_row = get_row(from), to_row = get_row(to);
     char from_column = get_column(from), to_column = get_column(to);
 
-    short row_difference = to_row - from_row;
+    short row_difference = get_relative_row_difference(from_row, to_row, from_column, to_column);
     char abs_column_difference = abs(to_column - from_column);
 
     return move_is_diagonal(row_difference, abs_column_difference) ||
@@ -359,7 +360,7 @@ const bool Board::check_rook_move(std::string from, std::string to) const
     short from_row = get_row(from), to_row = get_row(to);
     char from_column = get_column(from), to_column = get_column(to);
 
-    short row_difference = to_row - from_row;
+    short row_difference = get_relative_row_difference(from_row, to_row, from_column, to_column);
     char abs_column_difference = abs(to_column - from_column);
 
     return move_is_orthogonal(row_difference, abs_column_difference);
@@ -370,7 +371,7 @@ const bool Board::check_bishop_move(std::string from, std::string to) const
     short from_row = get_row(from), to_row = get_row(to);
     char from_column = get_column(from), to_column = get_column(to);
 
-    short row_difference = to_row - from_row;
+    short row_difference = get_relative_row_difference(from_row, to_row, from_column, to_column);
     char abs_column_difference = abs(to_column - from_column);
 
     return move_is_diagonal(row_difference, abs_column_difference);
@@ -381,7 +382,7 @@ const bool Board::check_knight_move(std::string from, std::string to) const
     short from_row = get_row(from), to_row = get_row(to);
     char from_column = get_column(from), to_column = get_column(to);
 
-    short row_difference = to_row - from_row;
+    short row_difference = get_relative_row_difference(from_row, to_row, from_column, to_column);
     char abs_column_difference = abs(to_column - from_column);
 
     return (row_difference == 2 && abs_column_difference == 1) ||
@@ -398,22 +399,25 @@ const bool Board::check_pawn_move(std::string from, std::string to, Color player
     short from_row = get_row(from), to_row = get_row(to);
     char from_column = get_column(from), to_column = get_column(to);
 
+    short row_difference = get_relative_row_difference(from_row, to_row, from_column, to_column);
+    char abs_column_difference = abs(to_column - from_column);
+
     if (player_color == Color::White)
     {
-        return (abs(to_column - from_column) == 1 && to_row == from_row) || // Move in row, able to capture
-               (to_row - from_row == 1 && to_column == from_column &&
+        return (abs_column_difference == 1 && row_difference == 0) || // Move in row, able to capture
+               (row_difference == 1 && abs_column_difference == 0 &&
                 board.at(to).piece == Piece::NoPiece) || // Move in column, unable to capture
                (position_on_pawn_initial_row(from_row, from_column, player_color) &&
-                to_column == from_column && to_column - from_column == 2 &&
+                abs_column_difference == 0 && row_difference == 2 &&
                 board.at(to).piece == Piece::NoPiece) // Two-step move from the initial row
             ;
     }
 
-    return (abs(to_column - from_column) == 1 && to_row == from_row) || // Move in row, able to capture
-           (to_row - from_row == -1 && to_column == from_column &&
+    return (abs_column_difference == 1 && row_difference == 0) || // Move in row, able to capture
+           (row_difference == -1 && abs_column_difference == 0 &&
             board.at(to).piece == Piece::NoPiece) || // Move in column, unable to capture
            (position_on_pawn_initial_row(from_row, from_column, player_color) &&
-            to_column == from_column && to_column - from_column == -2 &&
+            abs_column_difference == 0 && row_difference == -2 &&
             board.at(to).piece == Piece::NoPiece) // Two-step move from the initial row
         ;
 }
@@ -602,4 +606,35 @@ bool position_on_pawn_initial_row(short row, char col, Color pawn_color)
 {
     return (pawn_color == Color::White && row == 5 - abs('f' - col)) ||
            (pawn_color == Color::Black && row == 7);
+}
+
+// Normalizes relative to f-column movement
+short get_relative_row_difference(short from_row, short to_row, char from_column, char to_column)
+{
+    // d4 g6
+    // normal row difference 2
+    // expected 0
+    // abs... = 2
+    // got 0
+
+    // h6 e5
+    // normal row difference -1
+    // expected -3
+    // abs... = 2
+    // got -3
+
+    short row_difference = to_row - from_row;
+
+    // Relative to itself means no changes
+    if (from_column == 'f')
+        return row_difference;
+
+    // Decrease difference by 1 for each row moved against "board current"
+    if (from_column > 'f' && to_column < from_column)
+        row_difference -= abs(std::max(to_column, 'f') - from_column);
+
+    else if (from_column < 'f' && to_column > from_column)
+        row_difference -= abs(std::min(to_column, 'f') - from_column);
+
+    return row_difference;
 }
