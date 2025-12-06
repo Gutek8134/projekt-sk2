@@ -33,6 +33,7 @@ def process_message(message: str):
 
 def gui(message_queue: Queue[str], receiver_thread: threading.Thread):
     board = Board()
+    board.move(position(5, 5), position(5, 6))
     pygame.init()
     screen = pygame.display.set_mode((720, 720))
     pygame.display.set_caption("Hello Pygame")
@@ -40,7 +41,9 @@ def gui(message_queue: Queue[str], receiver_thread: threading.Thread):
     screen.fill(WHITE)
     draw_blank_board(screen)
 
-    sprites = pygame.sprite.Group(*draw_pieces(screen, board))
+    clickable_moves_group = pygame.sprite.Group()
+    sprites = pygame.sprite.Group(
+        *draw_pieces(screen, board, clickable_moves_group))
 
     # Game loop
     running: bool = True
@@ -48,11 +51,21 @@ def gui(message_queue: Queue[str], receiver_thread: threading.Thread):
         while not message_queue.empty():
             process_message(message_queue.get())
 
-        for event in pygame.event.get():
+        events = pygame.event.get()
+
+        for event in events:
             if event.type == pygame.QUIT:
                 running = False
                 break
+
+        screen.fill(WHITE)
+        draw_blank_board(screen)
+
+        sprites.update(events)
+        clickable_moves_group.update(events)
+
         sprites.draw(screen)
+        clickable_moves_group.draw(screen)
         pygame.display.flip()
 
     pygame.quit()

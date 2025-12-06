@@ -166,9 +166,22 @@ class Board:
         # endregion fill board
 
     def move(self, from_pos: position, to_pos: position) -> None:
+        if self.board[from_pos].color == Color.White:
+            self.white_pieces.remove(from_pos)
+            self.white_pieces.add(to_pos)
+            if self.board[from_pos].piece == Piece.King:
+                self.white_king_position = to_pos
+
+        if self.board[from_pos].color == Color.Black:
+            self.black_pieces.remove(from_pos)
+            self.black_pieces.add(to_pos)
+            if self.board[from_pos].piece == Piece.King:
+                self.black_king_position = to_pos
+
         self.board[from_pos], self.board[to_pos] = self.board[to_pos], self.board[from_pos]
 
-    def get_possible_moves(self, pos: position, player_color: Color) -> list[position]:
+    def get_possible_moves(self, pos: position) -> list[position]:
+        player_color = self.board[pos].color
         return {
             Piece.King: self.get_possible_king_moves,
             Piece.Queen: self.get_possible_queen_moves,
@@ -237,9 +250,13 @@ class Board:
         return moves
 
     def get_possible_pawn_moves(self, pos: position, player_color: Color) -> list[position]:
-        move_forward: position = position(
-            pos.col, pos.row + (1 if player_color == Color.White else -1))
-        move_forward = self.abs_move(pos, move_forward)
+        moves_forward: list[position] = [position(
+            pos.col, pos.row + (1 if player_color == Color.White else -1))]
+        if player_color == Color.Black and pos.row == 7:
+            moves_forward.append(position(pos.col, pos.row-2))
+        elif player_color == Color.White and pos.row == 5-abs(pos.col-5):
+            moves_forward.append(position(pos.col, pos.row+2))
+        moves_forward = [self.abs_move(pos, move) for move in moves_forward]
 
         moves_sideways: list[position] = [position(pos.col-1, pos.row), position(pos.col+1, pos.row)] if player_color == Color.White else [
             position(pos.col-1, pos.row-1), position(pos.col+1, pos.row-1)]
@@ -249,14 +266,15 @@ class Board:
         moves = [move for move in moves_sideways if self.board[move].color == (
             Color.White if player_color == Color.Black else Color.Black)]
 
-        if move_forward in self.all_positions and self.board[move_forward].color == Color.NoColor:
-            moves.append(move_forward)
+        for move in moves_forward:
+            if move in self.all_positions and self.board[move].color == Color.NoColor:
+                moves.append(move)
 
         return moves
 
     def position_under_attack(self, pos: position, player_color: Color) -> bool:
         for piece in (self.black_pieces if player_color == Color.Black else self.white_pieces):
-            if pos in self.get_possible_moves(piece, player_color):
+            if pos in self.get_possible_moves(piece):
                 return True
 
         return False
