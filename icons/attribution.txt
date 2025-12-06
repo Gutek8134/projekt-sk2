@@ -1,0 +1,8 @@
+All chess piece icons have been made by
+https://en.wikipedia.org/wiki/User:Cburnett
+and downloaded from
+https://commons.wikimedia.org/wiki/Category:PNG_chess_pieces/Standard_transparent
+
+They are under Creative Commons Attribution-Share Alike 3.0 Unported license.
+
+Board has been made by me and is granted to use for free by anyone. No liability.

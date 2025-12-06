@@ -149,7 +149,7 @@ class Board:
             self.board[pos] = field(pos, Color.White, Piece.Knight)
 
             sym_pos = symmetric_position(pos)
-            self.board[sym_pos] = field(sym_pos, Color.Black, Piece.Rook)
+            self.board[sym_pos] = field(sym_pos, Color.Black, Piece.Knight)
 
             self.white_pieces.add(pos)
             self.black_pieces.add(sym_pos)
