@@ -526,8 +526,8 @@ const bool move_is_diagonal(short row_difference, char abs_column_difference)
     if (row_difference > 0)
         return row_difference == abs_column_difference; // up diagonally
 
-    return abs_column_difference == 2 * (-row_difference) || // left-right
-           2 * abs_column_difference == (-row_difference);   // down diagonally
+    return abs_column_difference == 2 * row_difference || // left-right
+           2 * abs_column_difference == row_difference;   // down diagonally
 }
 
 const bool Board::player_joined(int player_id, Color player_color)
@@ -608,7 +608,7 @@ bool position_on_pawn_initial_row(short row, char col, Color pawn_color)
            (pawn_color == Color::Black && row == 7);
 }
 
-// Normalizes relative to f-column movement
+// Normalizes into f-column relative movement
 short get_relative_row_difference(short from_row, short to_row, char from_column, char to_column)
 {
     // d4 g6
