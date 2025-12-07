@@ -71,6 +71,8 @@ row_lengths: dict[int, int] = {1: 11,
                                11: 1}
 
 columns = "abcdefghijk"
+piece_symbols = {"K": Piece.King, "Q": Piece.Queen, "B": Piece.Bishop,
+                 "R": Piece.Rook, "N": Piece.Knight, "P": Piece.Pawn}
 
 
 def symmetric_position(pos: position) -> position:
@@ -723,3 +725,18 @@ class Board:
                     moves.append(diagonal_pos)
 
         return moves
+
+    def load(self, state: str):
+        for pos in self.all_positions:
+            self.board[pos] = field(pos, Color.NoColor, Piece.NoPiece)
+
+        for line in state.splitlines():
+            line = line.split()
+            if line[0][0] == "W":
+                pos = position(columns.index(line[1][0]), int(line[1][1:]))
+                self.board[pos] = field(
+                    pos, Color.White, piece_symbols[line[0][1]])
+            elif line[0][0] == "B":
+                pos = position(columns.index(line[1][0]), int(line[1][1:]))
+                self.board[pos] = field(
+                    pos, Color.White, piece_symbols[line[0][1]])

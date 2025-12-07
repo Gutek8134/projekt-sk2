@@ -8,8 +8,22 @@ from importlib import import_module
 from board import Board, position, field, Color, Piece
 
 
+def connect_to_server(client_socket: socket.socket, receiver_thread: threading.Thread):
+    server_addr = argv[1] if len(argv) > 1 else "127.0.0.1"
+    server_port = int(argv[2]) if len(argv) > 2 else 1337
+    print(f"Connecting to server at {server_addr}:{server_port}")
+
+    client_socket.connect((server_addr, server_port))
+    print("Connected\nJoining game")
+
+    receiver_thread.start()
+
+    client_socket.send(b"join auto")
+
+
 def end(client_socket: socket.socket):
     try:
+        client_socket.send(b"leave")
         client_socket.shutdown(socket.SHUT_RDWR)
         client_socket.close()
     except OSError as e:
@@ -28,22 +42,22 @@ def send_in_thread(client_socket: socket.socket, message: str):
 
 
 def process_message(message: str):
-    pass
+    print(message)
 
 
-def gui(message_queue: Queue[str], receiver_thread: threading.Thread):
+def gui(message_queue: Queue[str]):
     board = Board()
     board.move(position(5, 5), position(5, 6))
     pygame.init()
     screen = pygame.display.set_mode((720, 720))
-    pygame.display.set_caption("Hello Pygame")
+    pygame.display.set_caption("Gliński Chess")
     screen = pygame.display.set_mode((720, 720))
     screen.fill(WHITE)
     draw_blank_board(screen)
 
     clickable_moves_group = pygame.sprite.Group()
     sprites = pygame.sprite.Group(
-        *draw_pieces(screen, board, clickable_moves_group))
+        *draw_pieces(screen, board, clickable_moves_group))  # type: ignore
 
     # Game loop
     running: bool = True
@@ -79,7 +93,10 @@ def main():
     receiver_thread = threading.Thread(target=receiver, args=(
         client_socket, message_queue), daemon=True)
 
-    gui(message_queue, receiver_thread)
+    threading.Thread(target=connect_to_server, args=(
+        client_socket, receiver_thread), daemon=True).start()
+
+    gui(message_queue)
 
     end(client_socket)
 

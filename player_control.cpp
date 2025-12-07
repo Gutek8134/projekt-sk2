@@ -71,7 +71,7 @@ namespace player_control
             if (board->has_white_player())
                 messages.at(board->get_player_id(Color::White)).push("Black player joined");
             else if (board->has_black_player())
-                messages.at(board->get_player_id(Color::Black)).push("Black player joined");
+                messages.at(board->get_player_id(Color::Black)).push("White player joined");
 
             if (preferred_color == Color::NoColor)
                 board->player_joined(player_id);
@@ -80,7 +80,7 @@ namespace player_control
         }
 
         messages[player_id] = std::queue<std::string>();
-        messages.at(player_id).push(std::format("Connected to game {}", game_id));
+        messages.at(player_id).push(std::format("Connected to game {}\nPlayer id: {}", game_id, player_id));
         std::cout << "Player " << player_id << " joined" << std::endl;
     }
 
@@ -89,8 +89,31 @@ namespace player_control
         if (!messages.contains(player_id))
             return;
 
+        const bool both_players_present = get_board(player_id)->has_both_players();
+
         std::cout << "Player left id " << player_id << "\nBoard white id " << get_board(player_id)->get_player_id(Color::White) << " black id " << get_board(player_id)->get_player_id(Color::Black) << std::endl;
         get_board(player_id)->player_left(player_id);
+
+        if (both_players_present)
+        {
+            if (get_board(player_id)->player_color(player_id) == Color::White)
+            {
+                messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Opponent left");
+                if (!get_board(player_id)->has_game_ended())
+                    messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Win: walkover");
+            }
+            else if (get_board(player_id)->player_color(player_id) == Color::Black)
+            {
+                messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Opponent left");
+                if (!get_board(player_id)->has_game_ended())
+                    messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Win: walkover");
+            }
+        }
+        // Last player left
+        else
+            boards.erase(games.at(player_id));
+
+        games.erase(player_id);
         messages.erase(player_id);
 
         shutdown(player_id, SHUT_RDWR);

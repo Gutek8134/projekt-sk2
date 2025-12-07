@@ -79,13 +79,21 @@ bool handle_action(const int &player_id, const std::string &action)
 
     else if (arguments.at(0) == "move")
     {
-        player_control::get_board(player_id)->move(arguments.at(1), arguments.at(2));
+        if (player_control::get_board(player_id)->move(arguments.at(1), arguments.at(2)))
+            player_control::messages.at(player_id).push("accepted");
+        else
+            player_control::messages.at(player_id).push("blocked");
     }
 
     else if (arguments.at(0) == "leave")
     {
         player_control::remove_player(player_id);
         return false;
+    }
+
+    else
+    {
+        player_control::messages.at(player_id).push(std::format("unknown command: {}", action));
     }
 
     return true;
@@ -237,30 +245,12 @@ const bool handle_events(std::vector<pollfd> &poll_vector)
         if ((poll_vector.at(i).revents & (POLLHUP | POLLERR)))
         {
             int player_id = poll_vector.at(i).fd;
-            std::shared_ptr<Board> game = player_control::get_board(player_id);
-
-            int other_player_id;
-            if (game->player_color(player_id) == Color::White)
-            {
-                other_player_id = game->get_player_id(Color::Black);
-            }
-            else if (game->player_color(player_id) == Color::Black)
-            {
-                other_player_id = game->get_player_id(Color::White);
-            }
-            else
-            {
-                std::cout << "Something is very wrong" << std::endl;
-            }
 
             elements_to_remove.push_back(i);
-            player_control::remove_player(player_id);
-            if (other_player_id != -1)
-            {
-                player_control::messages.at(other_player_id).push("Opponent left");
-                if (!game->has_game_ended())
-                    player_control::messages.at(other_player_id).push("Win: Walkover");
-            }
+
+            // In case player left unsafely
+            if (player_control::messages.contains(player_id))
+                player_control::remove_player(player_id);
 
             skip = true;
         }
