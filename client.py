@@ -1,5 +1,6 @@
 import socket
 import pygame
+import pygame.freetype
 from sys import argv
 import threading
 from queue import Queue
@@ -13,7 +14,11 @@ def connect_to_server(client_socket: socket.socket, receiver_thread: threading.T
     server_port = int(argv[2]) if len(argv) > 2 else 1337
     print(f"Connecting to server at {server_addr}:{server_port}")
 
-    client_socket.connect((server_addr, server_port))
+    try:
+        client_socket.connect((server_addr, server_port))
+    except ConnectionRefusedError:
+        print("Connection refused")
+        return
     print("Connected\nJoining game")
 
     receiver_thread.start()
@@ -88,6 +93,8 @@ def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:
     screen.fill(WHITE)
     draw_blank_board(screen)
 
+    font = pygame.freetype.SysFont("DejaVu Sans", 24)
+
     clickable_moves_group = pygame.sprite.Group()
     sprites = pygame.sprite.Group(
         *draw_pieces(screen, board, clickable_moves_group))  # type: ignore
@@ -119,6 +126,14 @@ def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:
         sprites.draw(screen)
         if not board.awaiting_approval:
             clickable_moves_group.draw(screen)
+
+        font.render_to(
+            screen, (10, 20), "Player color:")
+        font.render_to(
+            screen, (10, 45), board.player_color.name if board.player_color is not Color.NoColor else 'Not connected')
+
+        font.render_to(screen, (600, 20), "Wait" if board.player_color !=
+                       board.current_turn else "Your turn")
         pygame.display.flip()
 
     pygame.quit()

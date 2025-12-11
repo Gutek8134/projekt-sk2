@@ -1,5 +1,5 @@
 import enum
-from typing import NamedTuple
+from typing import NamedTuple, Iterable
 from socket import socket
 import pygame
 
@@ -93,6 +93,8 @@ class Board:
     all_positions: set[position]
     last_move: tuple[position, position, Piece, Color]
     last_sprite_removed: pygame.sprite.Sprite | None
+
+    cheats = True
 
     def __init__(self, client_socket: socket) -> None:
         self.current_turn: Color = Color.Black
@@ -194,6 +196,12 @@ class Board:
         if self.board[to_pos].piece == Piece.King:
             self.game_on = False
 
+        if self.board[to_pos].color == Color.White:
+            self.white_pieces.remove(to_pos)
+
+        if self.board[to_pos].color == Color.Black:
+            self.black_pieces.remove(to_pos)
+
         self.board[to_pos] = self.board[from_pos]
         self.board[from_pos] = field(from_pos, Color.NoColor, Piece.NoPiece)
         self.current_turn = Color.White if self.current_turn == Color.Black else Color.Black
@@ -225,6 +233,12 @@ class Board:
         if self.board[to_pos].piece == Piece.King:
             self.game_on = False
 
+        if self.board[to_pos].color == Color.White:
+            self.white_pieces.remove(to_pos)
+
+        if self.board[to_pos].color == Color.Black:
+            self.black_pieces.remove(to_pos)
+
         self.last_move = (from_pos, to_pos,
                           self.board[to_pos].piece, self.board[to_pos].color)
         self.board[to_pos] = self.board[from_pos]
@@ -246,21 +260,41 @@ class Board:
 
     def retract_last_move(self) -> None:
         from_pos, to_pos, piece, color = self.last_move
+
+        if self.board[to_pos].color == Color.White:
+            self.white_pieces.remove(to_pos)
+            self.white_pieces.add(from_pos)
+            if self.board[to_pos].piece == Piece.King:
+                self.white_king_position = from_pos
+
+        if self.board[to_pos].color == Color.Black:
+            self.black_pieces.remove(to_pos)
+            self.black_pieces.add(from_pos)
+            if self.board[to_pos].piece == Piece.King:
+                self.black_king_position = to_pos
+
+        if color == Color.White:
+            self.white_pieces.add(to_pos)
+        if color == Color.Black:
+            self.black_pieces.add(to_pos)
+
         self.board[from_pos] = self.board[to_pos]
         self.board[to_pos] = field(to_pos, color, piece)
+
+        self.sprites[from_pos] = self.sprites[to_pos]
+        self.sprites[from_pos].pos = from_pos  # type: ignore
 
         if self.last_sprite_removed is not None:
             self.last_sprite_removed.visible = True  # type: ignore
             self.sprites[to_pos] = self.last_sprite_removed
 
-        self.sprites[to_pos].pos = from_pos  # type: ignore
-        self.sprites[from_pos] = self.sprites[to_pos]
-
         self.current_turn = self.player_color
         if piece == Piece.King:
             self.game_on = True
 
-    def get_possible_moves(self, pos: position) -> list[position]:
+    def get_possible_moves(self, pos: position) -> Iterable[position]:
+        if Board.cheats:
+            return self.all_positions.difference({pos})
         player_color = self.board[pos].color
         return {
             Piece.King: self.get_possible_king_moves,
