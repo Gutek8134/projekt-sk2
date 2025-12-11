@@ -371,6 +371,7 @@ int main(int argc, char *argv[])
 {
     signal(SIGPIPE, SIG_IGN);
     prepare_server(argc >= 2 ? atoi(argv[1]) : 1337);
+    player_control::initialize_cheat_board();
     signal(SIGINT, handle_interrupt);
 
     std::vector<pollfd>
@@ -397,7 +398,10 @@ int main(int argc, char *argv[])
         }
 
         if (!handle_events(poll_vector))
+        {
+            std::cout << "Events could not be handled" << std::endl;
             break;
+        }
     }
 
     player_control::clear_players();

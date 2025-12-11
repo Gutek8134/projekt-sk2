@@ -842,13 +842,24 @@ class Board:
         for pos in self.all_positions:
             self.board[pos] = field(pos, Color.NoColor, Piece.NoPiece)
 
+        self.white_pieces.clear()
+        self.black_pieces.clear()
+
+        print(state)
         for line in state.splitlines():
             line = line.split()
+            print(line)
             if line[0][0] == "W":
                 pos = position(columns.index(line[1][0]), int(line[1][1:]))
+                self.white_pieces.add(pos)
                 self.board[pos] = field(
                     pos, Color.White, piece_symbols[line[0][1]])
+                if piece_symbols[line[0][1]] == Piece.King:
+                    self.white_king_position = pos
             elif line[0][0] == "B":
                 pos = position(columns.index(line[1][0]), int(line[1][1:]))
+                self.black_pieces.add(pos)
                 self.board[pos] = field(
-                    pos, Color.White, piece_symbols[line[0][1]])
+                    pos, Color.Black, piece_symbols[line[0][1]])
+                if piece_symbols[line[0][1]] == Piece.King:
+                    self.black_king_position = pos

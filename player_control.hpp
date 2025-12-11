@@ -7,6 +7,7 @@
 
 namespace player_control
 {
+    void initialize_cheat_board();
     /// player id -> game id
     extern std::unordered_map<int, int> games;
     /// messages to send

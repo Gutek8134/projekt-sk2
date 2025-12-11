@@ -7,6 +7,21 @@ std::unordered_set<int> free_gids = {};
 
 namespace player_control
 {
+    std::string cheat_board = "WK f6\nBK k1\nBR c3\n";
+    void initialize_cheat_board()
+    {
+        auto positions = Board().get_all_positions();
+
+        for (const auto &position : positions)
+        {
+            if (position != "f6" && position != "l1" && position != "c3")
+            {
+                cheat_board.append("E ");
+                cheat_board.append(position);
+                cheat_board.append("\n");
+            }
+        }
+    }
     std::unordered_map<int, int> games = {};
     std::unordered_map<int, std::shared_ptr<Board>> boards = {};
     std::unordered_map<int, std::queue<std::string>> messages = {};
@@ -87,7 +102,7 @@ namespace player_control
         messages[player_id] = std::queue<std::string>();
         messages.at(player_id).push(std::format("Connected to game {}\nPlayer id: {}\nColor: {}", game_id, player_id, color_to_string(boards.at(game_id)->player_color(player_id))));
         if (cheats)
-            messages.at(player_id).push(std::format("load\n{}", boards.at(game_id)->serialize()));
+            messages.at(player_id).push(std::format("load\n{}", cheat_board));
 
         std::cout << "Player " << player_id << " joined" << std::endl;
         if (!boards.at(game_id)->has_both_players())
@@ -97,9 +112,15 @@ namespace player_control
         else
         {
             boards.at(game_id)->reset();
+            if (cheats)
+                boards.at(game_id)->load_board(cheat_board);
             messages.at(boards.at(game_id)->get_player_id(Color::White)).push("Game started");
             messages.at(boards.at(game_id)->get_player_id(Color::Black)).push("Game started");
             std::cout << "Game " << game_id << " started" << std::endl;
+            if (cheats)
+            {
+                std::cout << "Cheat board enabled" << std::endl;
+            }
         }
     }
 

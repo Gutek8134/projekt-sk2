@@ -23,7 +23,7 @@ def connect_to_server(client_socket: socket.socket, receiver_thread: threading.T
 
     receiver_thread.start()
 
-    client_socket.send(b"join auto")
+    client_socket.send(b"join 42069")
 
 
 def end(client_socket: socket.socket) -> None:
@@ -51,7 +51,7 @@ def send_in_thread(client_socket: socket.socket, message: str, lock: threading.L
         client_socket, message, lock), daemon=True).start()
 
 
-def process_message(message: str, board: Board, sprites: pygame.sprite.Group):
+def process_message(message: str, board: Board, sprites: pygame.sprite.Group, screen: pygame.Surface, clickable_moves_group: pygame.sprite.Group):
     if len(message) == 0:
         return
     if message == "blocked" or message.startswith("error"):
@@ -61,7 +61,7 @@ def process_message(message: str, board: Board, sprites: pygame.sprite.Group):
     elif message == "accepted":
         board.awaiting_approval = False
 
-    elif message == "Game started":
+    elif message.endswith("Game started"):
         board.game_on = True
 
     multipart_message = message.split()
@@ -73,15 +73,21 @@ def process_message(message: str, board: Board, sprites: pygame.sprite.Group):
 
     multipart_message = message.splitlines()
     if len(multipart_message) > 0:
+        # print(f'"{multipart_message[0]}"')
         if multipart_message[0] == "load":
-            board.load("\n".join(multipart_message[1:]))
+            board.load(
+                "\n".join(part for part in multipart_message[1:] if len(part.split()) == 2))
+            sprites.empty()
+            sprites.add(draw_pieces(screen, board, clickable_moves_group))
+            for sprite in sprites:
+                sprite: PieceSprite
+                sprite.group = sprites
 
         for line in multipart_message:
             if line.startswith("Color"):
                 board.player_color = Color.Black if line[-1] == "B" else Color.White
-                print(f"{board.player_color=}")
 
-    print(message)
+    # print(message)
 
 
 def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:
@@ -107,7 +113,8 @@ def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:
     running: bool = True
     while running:
         while not message_queue.empty():
-            process_message(message_queue.get(), board, sprites)
+            process_message(message_queue.get(), board, sprites,
+                            screen, clickable_moves_group)
 
         events = pygame.event.get()
 
