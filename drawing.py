@@ -22,8 +22,6 @@ class MoveSprite(pygame.sprite.Sprite):
                 if self.rect.collidepoint(event.pos):
                     self.controlled_sprite.board.move(
                         self.controlled_sprite.pos, self.pos)
-                    self.controlled_sprite.rect.x, self.controlled_sprite.rect.y = self.rect.x, self.rect.y
-                    self.controlled_sprite.pos = self.pos
                     self.controlled_sprite.clickable_moves_group.empty()
 
 
@@ -37,11 +35,21 @@ class PieceSprite(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
         self.visible = True
+        self.group: pygame.sprite.Group
         self.board = board
         self.pos = pos
         self.screen_size = screen_size
+        self.board.sprites[pos] = self
 
     def update(self, events: list[pygame.event.Event]):
+        if self.visible and not self.group.has(self):
+            self.group.add(self)
+        elif not self.visible and self.group.has(self):
+            self.group.remove(self)
+
+        self.rect.x, self.rect.y = position_to_coordinates(
+            self.screen_size, self.pos)
+
         for event in events:
             if event.type == pygame.MOUSEBUTTONUP:
                 if self.rect.collidepoint(event.pos):

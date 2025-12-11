@@ -71,6 +71,11 @@ bool enable_keepalive(int sock)
 bool handle_action(const int &player_id, const std::string &action)
 {
     auto arguments = split(action);
+    if (arguments.size() <= 0)
+    {
+        player_control::messages.at(player_id).push(std::format("error: no command"));
+        return true;
+    }
 
     if (arguments.at(0) == "join")
     {
@@ -79,8 +84,61 @@ bool handle_action(const int &player_id, const std::string &action)
 
     else if (arguments.at(0) == "move")
     {
-        if (player_control::get_board(player_id)->move(arguments.at(1), arguments.at(2)))
+        if (arguments.size() <= 2)
+        {
+            player_control::messages.at(player_id).push(std::format("error: not enough arguments for move"));
+            return true;
+        }
+
+        auto board = player_control::get_board(player_id);
+        if (board->has_game_ended())
+        {
+            player_control::messages.at(player_id).push(std::format("error: game has already ended"));
+            return true;
+        }
+
+        if (!board->has_both_players())
+        {
+            player_control::messages.at(player_id).push(std::format("error: still waiting for other player"));
+            return true;
+        }
+
+        if (board->move(arguments.at(1), arguments.at(2), board->player_color(player_id)))
+        {
             player_control::messages.at(player_id).push("accepted");
+            int other_player_id = (board->player_color(player_id) == Color::White) ? board->get_player_id(Color::Black) : board->get_player_id(Color::White);
+            player_control::messages.at(other_player_id).push(action);
+
+            if (board->has_game_ended())
+            {
+                if (board->player_color(player_id) == Color::White)
+                {
+                    if (board->has_white_won())
+                    {
+                        player_control::messages.at(player_id).push("Win: king is dead");
+                        player_control::messages.at(other_player_id).push("Loss");
+                    }
+                    else
+                    {
+                        player_control::messages.at(player_id).push("Loss");
+                        player_control::messages.at(other_player_id).push("Win: king is dead");
+                    }
+                }
+                else if (board->player_color(player_id) == Color::Black)
+                {
+                    if (board->has_black_won())
+                    {
+                        player_control::messages.at(player_id).push("Win: king is dead");
+                        player_control::messages.at(other_player_id).push("Loss");
+                    }
+                    else
+                    {
+                        player_control::messages.at(player_id).push("Loss");
+                        player_control::messages.at(other_player_id).push("Win: king is dead");
+                    }
+                }
+            }
+        }
         else
             player_control::messages.at(player_id).push("blocked");
     }
@@ -103,7 +161,7 @@ const bool send_messages(const int &player_id)
 {
     if (!player_control::messages.contains(player_id))
     {
-        std::cout << "Player " << player_id << " has not joined yet" << std::endl;
+        // std::cout << "Player " << player_id << " has not joined yet" << std::endl;
         return true;
     }
 

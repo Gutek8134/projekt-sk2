@@ -3,12 +3,12 @@ import pygame
 from sys import argv
 import threading
 from queue import Queue
-from drawing import draw_blank_board, draw_pieces, WHITE
+from drawing import draw_blank_board, draw_pieces, WHITE, PieceSprite
 from importlib import import_module
-from board import Board, position, field, Color, Piece
+from board import Board, Color, position, columns
 
 
-def connect_to_server(client_socket: socket.socket, receiver_thread: threading.Thread):
+def connect_to_server(client_socket: socket.socket, receiver_thread: threading.Thread) -> None:
     server_addr = argv[1] if len(argv) > 1 else "127.0.0.1"
     server_port = int(argv[2]) if len(argv) > 2 else 1337
     print(f"Connecting to server at {server_addr}:{server_port}")
@@ -21,7 +21,7 @@ def connect_to_server(client_socket: socket.socket, receiver_thread: threading.T
     client_socket.send(b"join auto")
 
 
-def end(client_socket: socket.socket):
+def end(client_socket: socket.socket) -> None:
     try:
         client_socket.send(b"leave")
         client_socket.shutdown(socket.SHUT_RDWR)
@@ -30,24 +30,57 @@ def end(client_socket: socket.socket):
         print(e)
 
 
-def receiver(client_socket: socket.socket, message_queue: Queue[str]):
+def receiver(client_socket: socket.socket, message_queue: Queue[str]) -> None:
     while True:
         message = client_socket.recv(4096).decode()
         message_queue.put(message)
 
 
-def send_in_thread(client_socket: socket.socket, message: str):
-    threading.Thread(target=lambda: client_socket.send(
-        message.encode()), daemon=True).start()
+def _send_in_thread(client_socket: socket.socket, message: str, lock: threading.Lock) -> None:
+    with lock:
+        client_socket.send(message.encode())
 
 
-def process_message(message: str):
+def send_in_thread(client_socket: socket.socket, message: str, lock: threading.Lock) -> None:
+    threading.Thread(target=_send_in_thread, args=(
+        client_socket, message, lock), daemon=True).start()
+
+
+def process_message(message: str, board: Board, sprites: pygame.sprite.Group):
+    if len(message) == 0:
+        return
+    if message == "blocked" or message.startswith("error"):
+        board.retract_last_move()
+        board.awaiting_approval = False
+
+    elif message == "accepted":
+        board.awaiting_approval = False
+
+    elif message == "Game started":
+        board.game_on = True
+
+    multipart_message = message.split()
+
+    if len(multipart_message) > 1:
+        if multipart_message[0] == "move" and len(multipart_message) == 3:
+            board.apply_move(position(columns.index(multipart_message[1][0]), int(
+                multipart_message[1][1:])), position(columns.index(multipart_message[2][0]), int(multipart_message[2][1:])))
+
+    multipart_message = message.splitlines()
+    if len(multipart_message) > 0:
+        if multipart_message[0] == "load":
+            board.load("\n".join(multipart_message[1:]))
+
+        for line in multipart_message:
+            if line.startswith("Color"):
+                board.player_color = Color.Black if line[-1] == "B" else Color.White
+                print(f"{board.player_color=}")
+
     print(message)
 
 
-def gui(message_queue: Queue[str]):
-    board = Board()
-    board.move(position(5, 5), position(5, 6))
+def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:
+    board = Board(client_socket)
     pygame.init()
     screen = pygame.display.set_mode((720, 720))
     pygame.display.set_caption("Gliński Chess")
@@ -59,11 +92,15 @@ def gui(message_queue: Queue[str]):
     sprites = pygame.sprite.Group(
         *draw_pieces(screen, board, clickable_moves_group))  # type: ignore
 
+    for sprite in sprites:
+        sprite: PieceSprite
+        sprite.group = sprites
+
     # Game loop
     running: bool = True
     while running:
         while not message_queue.empty():
-            process_message(message_queue.get())
+            process_message(message_queue.get(), board, sprites)
 
         events = pygame.event.get()
 
@@ -76,16 +113,18 @@ def gui(message_queue: Queue[str]):
         draw_blank_board(screen)
 
         sprites.update(events)
-        clickable_moves_group.update(events)
+        if not board.awaiting_approval:
+            clickable_moves_group.update(events)
 
         sprites.draw(screen)
-        clickable_moves_group.draw(screen)
+        if not board.awaiting_approval:
+            clickable_moves_group.draw(screen)
         pygame.display.flip()
 
     pygame.quit()
 
 
-def main():
+def main() -> None:
     client_socket = socket.socket(
         socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 
@@ -96,7 +135,7 @@ def main():
     threading.Thread(target=connect_to_server, args=(
         client_socket, receiver_thread), daemon=True).start()
 
-    gui(message_queue)
+    gui(message_queue, client_socket)
 
     end(client_socket)
 

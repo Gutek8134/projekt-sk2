@@ -25,6 +25,8 @@ namespace player_control
 
     void add_player(const int &player_id, int game_id, Color preferred_color)
     {
+        bool cheats = game_id == 42069;
+
         if (game_id == -1)
         {
             if (!free_gids.empty())
@@ -61,7 +63,8 @@ namespace player_control
         {
             Board *board = new Board(game_id,
                                      ((preferred_color == Color::Black) ? player_id : -1),
-                                     ((preferred_color == Color::White || preferred_color == Color::NoColor) ? player_id : -1));
+                                     ((preferred_color == Color::White || preferred_color == Color::NoColor) ? player_id : -1),
+                                     cheats);
             boards.insert({game_id, std::shared_ptr<Board>(board)});
         }
         else
@@ -79,9 +82,25 @@ namespace player_control
                 board->player_joined(player_id, preferred_color);
         }
 
+        cheats = boards.at(game_id)->cheat_board || cheats;
+
         messages[player_id] = std::queue<std::string>();
-        messages.at(player_id).push(std::format("Connected to game {}\nPlayer id: {}", game_id, player_id));
+        messages.at(player_id).push(std::format("Connected to game {}\nPlayer id: {}\nColor: {}", game_id, player_id, color_to_string(boards.at(game_id)->player_color(player_id))));
+        if (cheats)
+            messages.at(player_id).push(std::format("load\n{}", boards.at(game_id)->serialize()));
+
         std::cout << "Player " << player_id << " joined" << std::endl;
+        if (!boards.at(game_id)->has_both_players())
+        {
+            messages.at(player_id).push("Waiting for other player");
+        }
+        else
+        {
+            boards.at(game_id)->reset();
+            messages.at(boards.at(game_id)->get_player_id(Color::White)).push("Game started");
+            messages.at(boards.at(game_id)->get_player_id(Color::Black)).push("Game started");
+            std::cout << "Game " << game_id << " started" << std::endl;
+        }
     }
 
     void remove_player(const int &player_id)

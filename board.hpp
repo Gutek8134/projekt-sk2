@@ -38,13 +38,14 @@ protected:
     bool _white_is_checked, _black_is_checked;
     bool black_won, white_won;
     int black_player_id, white_player_id, game_id;
+    Color active_color;
 
 public:
-    Board(int game_id = -1, int black_player_id = -1, int white_player_id = -1);
+    Board(int game_id = -1, int black_player_id = -1, int white_player_id = -1, bool cheat_board = false);
     const field &get_field(std::string at) const;
     const std::unordered_set<std::string> &get_all_positions() const;
     static const std::string get_symmetrical_position(std::string position);
-    const bool move(std::string from, std::string to);
+    const bool move(std::string from, std::string to, Color player_color);
     const bool promote(std::string position, Piece to);
     const bool white_is_checked() const { return _white_is_checked; }
     const bool black_is_checked() const { return _black_is_checked; }
@@ -55,7 +56,9 @@ public:
     const bool has_black_player() const { return black_player_id != -1; }
     const bool has_both_players() const { return (white_player_id != -1) && (black_player_id != -1); }
     const std::string serialize() const;
+    Color get_active_color() const { return active_color; }
     void load_board(std::string serialized_board);
+    void reset();
 
     void show() const;
 
@@ -98,6 +101,8 @@ public:
     }
 
     const int get_player_id(Color player_color) const;
+
+    bool cheat_board;
 
 private:
     const bool move_is_legal(std::string from, std::string to) const;

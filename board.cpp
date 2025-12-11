@@ -13,12 +13,13 @@ short get_relative_row_difference(short from_row, short to_row, char from_col, c
 
 const std::size_t cell_count = 91UL;
 
-Board::Board(int _game_id, int _black_player_id, int _white_player_id) : black_player_id(_black_player_id), white_player_id(_white_player_id), game_id(_game_id)
+Board::Board(int _game_id, int _black_player_id, int _white_player_id, bool _cheat_board) : black_player_id(_black_player_id), white_player_id(_white_player_id), game_id(_game_id), cheat_board(_cheat_board)
 {
     this->all_positions = {};
     this->white_pieces = {};
     this->black_pieces = {};
     this->board = {};
+    this->active_color = Color::Black;
     board.reserve(cell_count);
     _white_is_checked = false;
     _black_is_checked = false;
@@ -130,11 +131,137 @@ Board::Board(int _game_id, int _black_player_id, int _white_player_id) : black_p
 #pragma endregion fill_board
 }
 
-const bool Board::move(std::string from, std::string to)
+void Board::reset()
+{
+    this->all_positions = {};
+    this->white_pieces = {};
+    this->black_pieces = {};
+    this->board = {};
+    this->active_color = Color::Black;
+    board.reserve(cell_count);
+    _white_is_checked = false;
+    _black_is_checked = false;
+
+    std::string row, column, position;
+    unsigned short row_length, row_distance_from_f;
+    for (unsigned short row_index = 1; row_index <= 11; ++row_index)
+    {
+        row = std::to_string(row_index);
+        row_length = line_length.at(row);
+        row_distance_from_f = (row_length - 1) / 2;
+
+        for (char column_index = 'f' - row_distance_from_f; column_index <= 'f' + row_distance_from_f; ++column_index)
+        {
+            column = column_index;
+            position = column + row;
+            this->all_positions.insert(position);
+
+            field empty_field =
+                {
+                    position,
+                    Piece::NoPiece,
+                    Color::NoColor,
+                };
+
+            board[position] = empty_field;
+        }
+    }
+
+#pragma region fill_board
+    std::string symmetrical_position;
+    for (const auto &position : king_positions)
+    {
+        board[position].color = Color::White;
+        board[position].piece = Piece::King;
+
+        symmetrical_position = Board::get_symmetrical_position(position);
+        board[symmetrical_position].color = Color::Black;
+        board[symmetrical_position].piece = Piece::King;
+
+        white_king_position = position;
+        white_pieces.insert(position);
+        black_king_position = symmetrical_position;
+        black_pieces.insert(symmetrical_position);
+    }
+
+    for (const auto &position : queen_positions)
+    {
+        board[position].color = Color::White;
+        board[position].piece = Piece::Queen;
+
+        symmetrical_position = Board::get_symmetrical_position(position);
+        board[symmetrical_position].color = Color::Black;
+        board[symmetrical_position].piece = Piece::Queen;
+
+        white_pieces.insert(position);
+        black_pieces.insert(symmetrical_position);
+    }
+
+    for (const auto &position : rook_positions)
+    {
+        board[position].color = Color::White;
+        board[position].piece = Piece::Rook;
+
+        symmetrical_position = Board::get_symmetrical_position(position);
+        board[symmetrical_position].color = Color::Black;
+        board[symmetrical_position].piece = Piece::Rook;
+
+        white_pieces.insert(position);
+        black_pieces.insert(symmetrical_position);
+    }
+    for (const auto &position : bishop_positions)
+    {
+        board[position].color = Color::White;
+        board[position].piece = Piece::Bishop;
+
+        symmetrical_position = Board::get_symmetrical_position(position);
+        board[symmetrical_position].color = Color::Black;
+        board[symmetrical_position].piece = Piece::Bishop;
+
+        white_pieces.insert(position);
+        black_pieces.insert(symmetrical_position);
+    }
+    for (const auto &position : knight_positions)
+    {
+        board[position].color = Color::White;
+        board[position].piece = Piece::Knight;
+
+        symmetrical_position = Board::get_symmetrical_position(position);
+        board[symmetrical_position].color = Color::Black;
+        board[symmetrical_position].piece = Piece::Knight;
+
+        white_pieces.insert(position);
+        black_pieces.insert(symmetrical_position);
+    }
+    for (const auto &position : pawn_positions)
+    {
+        board[position].color = Color::White;
+        board[position].piece = Piece::Pawn;
+
+        symmetrical_position = Board::get_symmetrical_position(position);
+        board[symmetrical_position].color = Color::Black;
+        board[symmetrical_position].piece = Piece::Pawn;
+
+        white_pieces.insert(position);
+        black_pieces.insert(symmetrical_position);
+    }
+
+#pragma endregion fill_board
+}
+
+const bool Board::move(std::string from, std::string to, Color player_color)
 {
     // Awaiting second player
     // If both ids are -1, continues assuming testing purposes
     if ((black_player_id == -1) ^ (white_player_id == -1))
+        return false;
+
+    if (board.at(from).color != player_color)
+        return false;
+
+    Color capture_color = board.at(to).color;
+    // It's the other player's move
+    if (player_color != active_color || ((black_player_id == -1) && (white_player_id == -1)))
         return false;
 
     // The game has finished
@@ -145,8 +272,16 @@ const bool Board::move(std::string from, std::string to)
     if (!move_is_legal(from, to))
         return false;
 
-    Color player_color = board.at(from).color, capture_color = board.at(to).color;
     Piece player_piece = board.at(from).piece;
+
+    // Win check
+    if (board.at(to).piece == Piece::King)
+    {
+        if (player_color == Color::White)
+            white_won = true;
+        else
+            black_won = true;
+    }
 
     // Move
     board.at(to).color = player_color;
@@ -181,31 +316,34 @@ const bool Board::move(std::string from, std::string to)
         black_pieces.erase(to);
     }
 
-    // Check check
-    _white_is_checked = position_under_attack(white_king_position, Color::Black);
-    _black_is_checked = position_under_attack(black_king_position, Color::White);
+    // Switch active player
+    active_color = (active_color == Color::Black) ? Color::White : Color::Black;
 
-    // Checkmate check
-    if (player_color == Color::Black && _white_is_checked)
-    {
-        black_won = true;
-        for (const auto &move : generate_king_moves(white_king_position))
-            if (!position_under_attack(move, Color::Black))
-            {
-                black_won = false;
-                break;
-            }
-    }
-    if (player_color == Color::White && _black_is_checked)
-    {
-        white_won = true;
-        for (const auto &move : generate_king_moves(black_king_position))
-            if (!position_under_attack(move, Color::White))
-            {
-                white_won = false;
-                break;
-            }
-    }
+    // // Check check
+    // _white_is_checked = position_under_attack(white_king_position, Color::Black);
+    // _black_is_checked = position_under_attack(black_king_position, Color::White);
+
+    // // Checkmate check
+    // if (player_color == Color::Black && _white_is_checked)
+    // {
+    //     black_won = true;
+    //     for (const auto &move : generate_king_moves(white_king_position))
+    //         if (!position_under_attack(move, Color::Black))
+    //         {
+    //             black_won = false;
+    //             break;
+    //         }
+    // }
+    // if (player_color == Color::White && _black_is_checked)
+    // {
+    //     white_won = true;
+    //     for (const auto &move : generate_king_moves(black_king_position))
+    //         if (!position_under_attack(move, Color::White))
+    //         {
+    //             white_won = false;
+    //             break;
+    //         }
+    // }
 
     return true;
 }
@@ -329,13 +467,14 @@ const bool Board::check_king_move(std::string from, std::string to, Color player
     short row_difference = get_relative_row_difference(from_row, to_row, from_column, to_column);
     char abs_column_difference = abs(to_column - from_column);
 
+    // Let's ignore this one for simplicity
     // Can't intentionally move into check
-    //! possible infinite recursion, though it passed a simple test
-    if (player_color == Color::White && position_under_attack(to, Color::Black))
-        return false;
+    // //! possible infinite recursion, though it passed a simple test
+    // if (player_color == Color::White && position_under_attack(to, Color::Black))
+    //     return false;
 
-    if (player_color == Color::Black && position_under_attack(to, Color::White))
-        return false;
+    // if (player_color == Color::Black && position_under_attack(to, Color::White))
+    //     return false;
 
     return (row_difference == 1 && abs_column_difference <= 1) ||
            (row_difference == 0 && abs_column_difference <= 1) ||
