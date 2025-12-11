@@ -43,3 +43,4 @@
 .vscode/
 .venv/
 *.pyc
+*.txt

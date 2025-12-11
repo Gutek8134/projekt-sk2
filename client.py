@@ -23,7 +23,7 @@ def connect_to_server(client_socket: socket.socket, receiver_thread: threading.T
 
     receiver_thread.start()
 
-    client_socket.send(b"join 42069")
+    client_socket.send(b"join auto")
 
 
 def end(client_socket: socket.socket) -> None:
