@@ -556,7 +556,7 @@ const bool Board::check_pawn_move(std::string from, std::string to, Color player
             ;
     }
 
-    return (abs_column_difference == 1 && row_difference == 0) || // Move in row, able to capture
+    return (abs_column_difference == 1 && row_difference == -1) || // Move in row, able to capture
            (row_difference == -1 && abs_column_difference == 0 &&
             board.at(to).piece == Piece::NoPiece) || // Move in column, unable to capture
            (position_on_pawn_initial_row(from_row, from_column, player_color) &&
