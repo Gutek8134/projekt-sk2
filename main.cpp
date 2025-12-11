@@ -369,6 +369,7 @@ const bool handle_events(std::vector<pollfd> &poll_vector)
 
 int main(int argc, char *argv[])
 {
+    signal(SIGPIPE, SIG_IGN);
     prepare_server(argc >= 2 ? atoi(argv[1]) : 1337);
     signal(SIGINT, handle_interrupt);
 
