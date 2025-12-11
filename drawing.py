@@ -50,12 +50,14 @@ class PieceSprite(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = position_to_coordinates(
             self.screen_size, self.pos)
 
-        for event in events:
-            if event.type == pygame.MOUSEBUTTONUP:
-                if self.rect.collidepoint(event.pos):
-                    for possible_move in self.board.get_possible_moves(self.pos):
-                        PieceSprite.clickable_moves_group.add(
-                            MoveSprite(possible_move, self, self.screen_size))
+        if self.board.board[self.pos].color == self.board.player_color == self.board.current_turn and self.board.game_on and not self.board.awaiting_approval:
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONUP:
+                    if self.rect.collidepoint(event.pos):
+                        PieceSprite.clickable_moves_group.empty()
+                        for possible_move in self.board.get_possible_moves(self.pos):
+                            PieceSprite.clickable_moves_group.add(
+                                MoveSprite(possible_move, self, self.screen_size))
 
 
 def draw_blank_board(screen: pygame.Surface) -> None:

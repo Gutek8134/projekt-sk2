@@ -93,7 +93,6 @@ class Board:
     all_positions: set[position]
     last_move: tuple[position, position, Piece, Color]
     last_sprite_removed: pygame.sprite.Sprite | None
-    player_color: Color
 
     def __init__(self, client_socket: socket) -> None:
         self.current_turn: Color = Color.Black
@@ -102,6 +101,7 @@ class Board:
         self.client_socket = client_socket
         self.sprites: dict[position, pygame.sprite.Sprite] = {}
         self.last_sprite_removed = None
+        self.player_color: Color = Color.NoColor
         self.reset_board()
 
     def reset_board(self) -> None:
