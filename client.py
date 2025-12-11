@@ -87,6 +87,9 @@ def process_message(message: str, board: Board, sprites: pygame.sprite.Group, sc
             if line.startswith("Color"):
                 board.player_color = Color.Black if line[-1] == "B" else Color.White
 
+    if "Win" in message:
+        board.game_on = False
+
     print(message)
 
 
