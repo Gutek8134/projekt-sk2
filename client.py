@@ -54,43 +54,47 @@ def send_in_thread(client_socket: socket.socket, message: str, lock: threading.L
 def process_message(message: str, board: Board, sprites: pygame.sprite.Group, screen: pygame.Surface, clickable_moves_group: pygame.sprite.Group):
     if len(message) == 0:
         return
-    if message == "blocked" or message.startswith("error"):
-        board.retract_last_move()
-        board.awaiting_approval = False
 
-    elif message == "accepted":
-        board.awaiting_approval = False
+    print(message)
 
-    elif message.endswith("Game started"):
-        board.game_on = True
+    lines = message.splitlines()
+    for i, line in enumerate(lines):
+        if "blocked" in line or line.startswith("error"):
+            board.retract_last_move()
+            board.awaiting_approval = False
 
-    multipart_message = message.split()
+        elif "accepted" in line:
+            board.awaiting_approval = False
 
-    if len(multipart_message) > 1:
-        if multipart_message[0] == "move" and len(multipart_message) == 3:
-            board.apply_move(position(columns.index(multipart_message[1][0]), int(
-                multipart_message[1][1:])), position(columns.index(multipart_message[2][0]), int(multipart_message[2][1:])))
+        elif line.endswith("Game started"):
+            board.game_on = True
 
-    multipart_message = message.splitlines()
-    if len(multipart_message) > 0:
+        elif line.startswith("Color"):
+            board.player_color = Color.Black if line[-1] == "B" else Color.White
+
+        elif "Win" in line:
+            board.game_on = False
+            board.won = True
+
+        elif "Loss" in line:
+            board.game_on = False
+            board.won = False
+
+        else:
+            multipart_message = line.split()
+            if len(multipart_message) == 3 and multipart_message[0] == "move":
+                board.apply_move(position(columns.index(multipart_message[1][0]), int(
+                    multipart_message[1][1:])), position(columns.index(multipart_message[2][0]), int(multipart_message[2][1:])))
+
         # print(f'"{multipart_message[0]}"')
-        if multipart_message[0] == "load":
+        if "load" in line:
             board.load(
-                "\n".join(part for part in multipart_message[1:] if len(part.split()) == 2))
+                "\n".join(part for part in lines[i+1:] if len(part.split()) == 2))
             sprites.empty()
             sprites.add(draw_pieces(screen, board, clickable_moves_group))
             for sprite in sprites:
                 sprite: PieceSprite
                 sprite.group = sprites
-
-        for line in multipart_message:
-            if line.startswith("Color"):
-                board.player_color = Color.Black if line[-1] == "B" else Color.White
-
-    if "Win" in message:
-        board.game_on = False
-
-    print(message)
 
 
 def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:
@@ -142,8 +146,7 @@ def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:
         font.render_to(
             screen, (10, 45), board.player_color.name if board.player_color is not Color.NoColor else 'Not connected')
 
-        font.render_to(screen, (600, 20), "Wait" if board.player_color !=
-                       board.current_turn else "Your turn")
+        font.render_to(screen, (600, 20), board.get_player_state())
         pygame.display.flip()
 
     pygame.quit()

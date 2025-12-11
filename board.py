@@ -104,6 +104,7 @@ class Board:
         self.sprites: dict[position, pygame.sprite.Sprite] = {}
         self.last_sprite_removed = None
         self.player_color: Color = Color.NoColor
+        self.won: bool | None = None
         self.reset_board()
 
     def reset_board(self) -> None:
@@ -179,6 +180,21 @@ class Board:
             self.black_pieces.add(sym_pos)
 
         # endregion fill board
+
+    def get_player_state(self) -> str:
+        if self.game_on:
+            if self.player_color != self.current_turn:
+                return "Wait"
+            else:
+                return "Your turn"
+
+        if self.won == None:
+            return "Waiting"
+
+        if self.won:
+            return "You won"
+
+        return "You lost"
 
     def apply_move(self, from_pos: position, to_pos: position) -> None:
         if self.board[from_pos].color == Color.White:

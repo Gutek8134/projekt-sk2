@@ -87,9 +87,9 @@ namespace player_control
             auto board = boards.at(game_id);
 
             if (board->has_white_player())
-                messages.at(board->get_player_id(Color::White)).push("Black player joined");
+                messages.at(board->get_player_id(Color::White)).push("Black player joined\n");
             else if (board->has_black_player())
-                messages.at(board->get_player_id(Color::Black)).push("White player joined");
+                messages.at(board->get_player_id(Color::Black)).push("White player joined\n");
 
             if (preferred_color == Color::NoColor)
                 board->player_joined(player_id);
@@ -100,22 +100,22 @@ namespace player_control
         cheats = boards.at(game_id)->cheat_board || cheats;
 
         messages[player_id] = std::queue<std::string>();
-        messages.at(player_id).push(std::format("Connected to game {}\nPlayer id: {}\nColor: {}", game_id, player_id, color_to_string(boards.at(game_id)->player_color(player_id))));
+        messages.at(player_id).push(std::format("Connected to game {}\nPlayer id: {}\nColor: {}\n", game_id, player_id, color_to_string(boards.at(game_id)->player_color(player_id))));
         if (cheats)
-            messages.at(player_id).push(std::format("load\n{}", cheat_board));
+            messages.at(player_id).push(std::format("load\n{}\n", cheat_board));
 
         std::cout << "Player " << player_id << " joined" << std::endl;
         if (!boards.at(game_id)->has_both_players())
         {
-            messages.at(player_id).push("Waiting for other player");
+            messages.at(player_id).push("Waiting for other player\n");
         }
         else
         {
             boards.at(game_id)->reset();
             if (cheats)
                 boards.at(game_id)->load_board(cheat_board);
-            messages.at(boards.at(game_id)->get_player_id(Color::White)).push("Game started");
-            messages.at(boards.at(game_id)->get_player_id(Color::Black)).push("Game started");
+            messages.at(boards.at(game_id)->get_player_id(Color::White)).push("Game started\n");
+            messages.at(boards.at(game_id)->get_player_id(Color::Black)).push("Game started\n");
             std::cout << "Game " << game_id << " started" << std::endl;
             if (cheats)
             {
@@ -135,20 +135,17 @@ namespace player_control
 
         if (both_players_present)
         {
-            std::cout << "HERE" << std::endl;
             if (get_board(player_id)->player_color(player_id) == Color::White)
             {
-                std::cout << "HERE W" << std::endl;
-                messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Opponent left");
+                messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Opponent left\n");
                 if (!get_board(player_id)->has_game_ended())
-                    messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Win: walkover");
+                    messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Win: walkover\n");
             }
             else if (get_board(player_id)->player_color(player_id) == Color::Black)
             {
-                std::cout << "HERE B " << get_board(player_id)->get_player_id(Color::White) << std::endl;
-                messages.at(get_board(player_id)->get_player_id(Color::White)).push("Opponent left");
+                messages.at(get_board(player_id)->get_player_id(Color::White)).push("Opponent left\n");
                 if (!get_board(player_id)->has_game_ended())
-                    messages.at(get_board(player_id)->get_player_id(Color::White)).push("Win: walkover");
+                    messages.at(get_board(player_id)->get_player_id(Color::White)).push("Win: walkover\n");
             }
             get_board(player_id)->player_left(player_id);
         }
