@@ -132,22 +132,25 @@ namespace player_control
         const bool both_players_present = get_board(player_id)->has_both_players();
 
         std::cout << "Player left id " << player_id << "\nBoard white id " << get_board(player_id)->get_player_id(Color::White) << " black id " << get_board(player_id)->get_player_id(Color::Black) << std::endl;
-        get_board(player_id)->player_left(player_id);
 
         if (both_players_present)
         {
+            std::cout << "HERE" << std::endl;
             if (get_board(player_id)->player_color(player_id) == Color::White)
             {
+                std::cout << "HERE W" << std::endl;
                 messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Opponent left");
                 if (!get_board(player_id)->has_game_ended())
                     messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Win: walkover");
             }
             else if (get_board(player_id)->player_color(player_id) == Color::Black)
             {
-                messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Opponent left");
+                std::cout << "HERE B " << get_board(player_id)->get_player_id(Color::White) << std::endl;
+                messages.at(get_board(player_id)->get_player_id(Color::White)).push("Opponent left");
                 if (!get_board(player_id)->has_game_ended())
-                    messages.at(get_board(player_id)->get_player_id(Color::Black)).push("Win: walkover");
+                    messages.at(get_board(player_id)->get_player_id(Color::White)).push("Win: walkover");
             }
+            get_board(player_id)->player_left(player_id);
         }
         // Last player left
         else

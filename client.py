@@ -87,7 +87,7 @@ def process_message(message: str, board: Board, sprites: pygame.sprite.Group, sc
             if line.startswith("Color"):
                 board.player_color = Color.Black if line[-1] == "B" else Color.White
 
-    # print(message)
+    print(message)
 
 
 def gui(message_queue: Queue[str], client_socket: socket.socket) -> None:

@@ -845,10 +845,8 @@ class Board:
         self.white_pieces.clear()
         self.black_pieces.clear()
 
-        print(state)
         for line in state.splitlines():
             line = line.split()
-            print(line)
             if line[0][0] == "W":
                 pos = position(columns.index(line[1][0]), int(line[1][1:]))
                 self.white_pieces.add(pos)
