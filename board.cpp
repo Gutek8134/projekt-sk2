@@ -21,6 +21,8 @@ Board::Board(int _game_id, int _black_player_id, int _white_player_id, bool _che
     this->board = {};
     this->active_color = Color::Black;
     board.reserve(cell_count);
+    white_won = false;
+    black_won = false;
     _white_is_checked = false;
     _black_is_checked = false;
 
@@ -139,6 +141,8 @@ void Board::reset()
     this->board = {};
     this->active_color = Color::Black;
     board.reserve(cell_count);
+    white_won = false;
+    black_won = false;
     _white_is_checked = false;
     _black_is_checked = false;
 
