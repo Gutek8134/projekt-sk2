@@ -74,6 +74,12 @@ namespace player_control
         }
 
         games[player_id] = game_id;
+        if (boards.contains(game_id) and boards.at(game_id)->has_both_players())
+        {
+            messages[player_id] = std::queue<std::string>({"Game is full"});
+            return;
+        }
+
         if (!boards.contains(game_id))
         {
             Board *board = new Board(game_id,
@@ -127,6 +133,9 @@ namespace player_control
     void remove_player(const int &player_id)
     {
         if (!messages.contains(player_id))
+            return;
+
+        if (!games.contains(player_id) || !boards.contains(games.at(player_id)))
             return;
 
         const bool both_players_present = get_board(player_id)->has_both_players();
